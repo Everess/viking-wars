@@ -2,10 +2,11 @@ package org.viking.wars;
 
 import org.viking.wars.entity.Island;
 import org.viking.wars.entity.Viking;
-import org.viking.wars.service.VikingService;
+import org.viking.wars.service.*;
 import org.viking.wars.constants.AppConstants;
-import org.viking.wars.service.IslandService;
-import org.viking.wars.service.MapService;
+import org.viking.wars.service.impl.IslandServiceImpl;
+import org.viking.wars.service.impl.MapServiceImpl;
+import org.viking.wars.service.impl.VikingServiceImpl;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -33,23 +34,23 @@ public class Main {
      */
     public static void main(String[] args) throws IOException {
         // Inject service layer.
-        IslandService islandService = new IslandService();
-        MapService mapService = new MapService(islandService);
-        VikingService vikingService = new VikingService(islandService);
+        IslandService islandService = new IslandServiceImpl();
+        MapServiceImpl mapServiceImpl = new MapServiceImpl(islandService);
+        VikingServiceImpl vikingServiceImpl = new VikingServiceImpl(islandService);
 
         // 1. Read map.
-        islandList = mapService.loadMap(AppConstants.PATH_TO_MAP);
+        islandList = mapServiceImpl.loadMap(AppConstants.PATH_TO_MAP);
         System.out.println("Map loaded. Islands created.");
 
         // 2. Create vikings.
-        vikingList = vikingService.createListOfVikings(defineStartIslandForViking());
+        vikingList = vikingServiceImpl.createListOfVikings(defineStartIslandForViking());
         System.out.println("Vikings are created and distributed across the islands.");
 
         // 3. Start game simulation.
-        Main.runGame(vikingList, vikingService, islandService);
+        Main.runGame(vikingList, vikingServiceImpl, islandService);
 
         // 4. Unload changed map to file.
-        mapService.unloadMap(islandList);
+        mapServiceImpl.unloadMap(islandList);
     }
 
     /**
