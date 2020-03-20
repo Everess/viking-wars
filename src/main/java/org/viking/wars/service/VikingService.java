@@ -1,5 +1,6 @@
 package org.viking.wars.service;
 
+import javafx.util.Pair;
 import org.viking.wars.enums.MessageType;
 import org.viking.wars.entity.Island;
 import org.viking.wars.entity.Viking;
@@ -14,11 +15,20 @@ import java.util.Random;
 public class VikingService {
 
     /**
+     * Inject island service logic.
+     */
+    private final IslandService islandService;
+
+    public VikingService(IslandService islandService) {
+        this.islandService = islandService;
+    }
+
+    /**
      * Create some vikings.
      * @param islandList List of islands.
      * @return List of vikings, which was created.
      */
-    public List<Viking> createListOfVikings(Island ... islandList) {
+    public List<Viking> createListOfVikings(List<Island> islandList) {
         List<Viking> vikingList = new ArrayList<>();
         int counter = 0;
 
@@ -26,6 +36,7 @@ public class VikingService {
             vikingList.add(
                     new Viking(counter++, concreteIsland)
             );
+            concreteIsland.setVikingsCount(1);
         }
 
         return vikingList;
@@ -42,12 +53,14 @@ public class VikingService {
                         .getIsland()
                         .getNeighborIslands()
                         .size();
-                concreteViking.setIsland(
-                        concreteViking
-                                .getIsland()
-                                .getNeighborIslands()
-                                .get(new Random().nextInt(islandsCount))
-                );
+                if (islandsCount != 0) {
+                    Pair<String, Island> neighborIsland = concreteViking
+                            .getIsland()
+                            .getNeighborIslands()
+                            .get(new Random().nextInt(islandsCount));
+                    islandService.checkAndUpdateVikingsCountOnIsland(neighborIsland.getValue(), concreteViking);
+                    System.err.println("Viking " + concreteViking.getVikingName() + " was displaced to " + concreteViking.getIsland().getIslandName());
+                }
             }
         }
 
@@ -57,7 +70,7 @@ public class VikingService {
     /**
      * Checking for a possible battle between the Vikings.
      * @param aliveAndDisplacedVikingList List of alive and displaced to other island vikings.
-     * @return
+     * @return List of viking warriors.
      */
     public List<Viking> checkForBattle(List<Viking> aliveAndDisplacedVikingList) {
         for (int i = 0; i < aliveAndDisplacedVikingList.size(); i++) {
@@ -66,7 +79,6 @@ public class VikingService {
                 Viking secondViking = aliveAndDisplacedVikingList.get(j);
                 if (firstViking.getIsland().equals(secondViking.getIsland()) && !firstViking.equals(secondViking) && firstViking.isAlive() && secondViking.isAlive()) {
                     firstViking.getIsland().setPresent(false);
-
                     // Set vikings alive statuses.
                     firstViking.setAlive(false);
                     secondViking.setAlive(false);
@@ -78,10 +90,6 @@ public class VikingService {
                                     secondViking
                             }
                     );
-
-                    // Delete dead vikings from list.
-                    aliveAndDisplacedVikingList.remove(firstViking);
-                    aliveAndDisplacedVikingList.remove(secondViking);
                 }
             }
         }
@@ -93,27 +101,42 @@ public class VikingService {
      * Search for the Vikings who are stuck on the island.
      * @param vikingList Vikings.
      */
-    public void checkBlockedVikings(List<Viking> vikingList) {
+    public int checkBlockedVikings(List<Viking> vikingList) {
+        int counter = 0;
         for (Viking concreteViking : vikingList) {
-            if (concreteViking.getIsland().getNeighborIslands().isEmpty() || concreteViking.getIsland().getNeighborIslands() == null) {
+            if (concreteViking.isAlive() &&
+                    (concreteViking.getIsland().getNeighborIslands().isEmpty() || concreteViking.getIsland().getNeighborIslands() == null)) {
+                counter++;
+            }
+
+            if (!concreteViking.getIsland().isPresent() && concreteViking.isAlive()) {
+                concreteViking.setAlive(false);
+            }
+
+            if ((concreteViking.getIsland().getNeighborIslands().isEmpty() ||
+                    concreteViking.getIsland().getNeighborIslands() == null) &&
+                            concreteViking.isAlive()) {
                 produceMessage(
                         MessageType.VIKING_BLOCKED,
                         new Viking[] { concreteViking }
                         );
             }
         }
+
+        return counter;
     }
+
 
     /**
      * This method allow write message to console.
      * @param messageType Type of message.
      * @param vikings Array of vikings.
      */
-    public void produceMessage(MessageType messageType, Viking[] vikings) {
+    private void produceMessage(MessageType messageType, Viking[] vikings) {
         switch (messageType) {
             case VIKING_BLOCKED:
                 System.out.println(
-                        "AGR !!! " +
+                        "AGR !!! Viking " +
                         vikings[0].getVikingName() +
                         " is stuck on island " +
                         vikings[0].getIsland().getIslandName() +

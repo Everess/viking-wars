@@ -1,5 +1,7 @@
 package org.viking.wars.entity;
 
+import javafx.util.Pair;
+
 import java.util.List;
 
 /**
@@ -25,7 +27,7 @@ public class Island {
     /**
      * Neighbor islands.
      */
-    private List<Island> neighborIslands;
+    private List<Pair<String, Island>> neighborIslands;
 
     public Island(String islandName) {
         this.islandName = islandName;
@@ -57,11 +59,11 @@ public class Island {
         this.vikingsCount = vikingsCount;
     }
 
-    public List<Island> getNeighborIslands() {
+    public List<Pair<String, Island>> getNeighborIslands() {
         return neighborIslands;
     }
 
-    public void setNeighborIslands(List<Island> neighborIslands) {
+    public void setNeighborIslands(List<Pair<String, Island>> neighborIslands) {
         this.neighborIslands = neighborIslands;
     }
 }

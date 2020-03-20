@@ -2,6 +2,7 @@ package org.viking.wars.service;
 
 import org.viking.wars.constants.AppConstants;
 import org.viking.wars.entity.Island;
+import org.viking.wars.exception.IslandNotFoundException;
 
 import java.io.*;
 import java.util.List;
@@ -28,7 +29,7 @@ public class MapService {
     public List<Island> loadMap(String pathToMap) throws IOException {
         try (BufferedReader reader = new BufferedReader(new FileReader(pathToMap))) {
             return islandService.createIslands(reader);
-        } catch (FileNotFoundException fileNotFoundException) {
+        } catch (FileNotFoundException | IslandNotFoundException fileNotFoundException) {
             throw new FileNotFoundException();
         } catch (IOException e) {
             throw new IOException();
@@ -41,7 +42,6 @@ public class MapService {
      * @return Unload map.
      * @throws IOException The exception that is thrown when reading from a file failed.
      */
-    @Deprecated
     public FileWriter unloadMap(List<Island> islandList) throws IOException {
         try (FileWriter writer = new FileWriter(AppConstants.OUTPUT_WRITE_PATH)) {
             List<String> rowsForFileList = islandService.getMapOfIslands(islandList);

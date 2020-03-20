@@ -10,6 +10,8 @@ import org.viking.wars.service.MapService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
+import java.util.Scanner;
 
 /**
  * @author Matvey Timoshin
@@ -31,27 +33,16 @@ public class Main {
      */
     public static void main(String[] args) throws IOException {
         // Inject service layer.
-        MapService mapService = new MapService(new IslandService());
-        VikingService vikingService = new VikingService();
         IslandService islandService = new IslandService();
+        MapService mapService = new MapService(islandService);
+        VikingService vikingService = new VikingService(islandService);
 
         // 1. Read map.
         islandList = mapService.loadMap(AppConstants.PATH_TO_MAP);
         System.out.println("Map loaded. Islands created.");
 
-        // TODO Добавить возможность задавать количество викингов.
         // 2. Create vikings.
-        for (int i = 0; i < AppConstants.VIKINGS_COUNT; i++) {
-
-        }
-        vikingList = vikingService.createListOfVikings(
-                islandList.get(0),
-                islandList.get(5),
-                islandList.get(2),
-                islandList.get(1),
-                islandList.get(3),
-                islandList.get(4)
-        );
+        vikingList = vikingService.createListOfVikings(defineStartIslandForViking());
         System.out.println("Vikings are created and distributed across the islands.");
 
         // 3. Start game simulation.
@@ -62,17 +53,45 @@ public class Main {
     }
 
     /**
+     * Define start island for every viking.
+     * @return List of start islands.
+     */
+    private static List<Island> defineStartIslandForViking() {
+        System.out.println("Enter vikings count:");
+        Scanner scanner = new Scanner(System.in);
+        int vikingsCount = scanner.nextInt();
+        if (vikingsCount < 2 || vikingsCount > islandList.size() * 2) {
+            System.err.println("Vikings count can't be < 2 and > islands count * 2");
+            System.exit(123);
+        }
+        List<Island> startIslandForViking = new ArrayList<>();
+        for (int i = 0; i < vikingsCount; i++) {
+            startIslandForViking.add(islandList.get(new Random().nextInt(islandList.size())));
+        }
+
+        return startIslandForViking;
+    }
+
+    /**
      * This method run the game.
      * @param vikingList Vikings.
      * @param vikingService Vikings logic layer.
      * @param islandService Island logic layer.
      */
-    public static void runGame(List<Viking> vikingList, VikingService vikingService, IslandService islandService) {
+    private static void runGame(List<Viking> vikingList, VikingService vikingService, IslandService islandService) {
         for (int i = 0; i < AppConstants.DAYS_COUNT; i++) {
+            if (vikingList.size() == 0) {
+                System.err.println("There no alive vikings.");
+                break;
+            }
             vikingList = vikingService.generateVikingsRoute(vikingList);
             vikingList = vikingService.checkForBattle(vikingList);
             islandList = islandService.checkInaccessibleIslands(islandList);
-            vikingService.checkBlockedVikings(vikingList);
+            int blockedVikingsCounter = vikingService.checkBlockedVikings(vikingList);
+            if (blockedVikingsCounter > 0) {
+                System.err.println("All alive vikings was blocked.");
+                break;
+            }
         }
     }
 }
